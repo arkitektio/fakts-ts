@@ -1,12 +1,13 @@
 {
-  "name": "fakts",
-  "version": "0.0.14",
+  "name": "@jhnnsrs/fakts",
+  "version": "0.0.15",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "p": "yarn publish --access public"
   },
   "files": [
     "dist"
