@@ -31,34 +31,36 @@ export const FaktsProvider: React.FC<FaktsProps> = ({
 
     let abortController = new AbortController();
 
-    let result = new CancelablePromise((resolve, reject, onCancel) => {
+    let result = new CancelablePromise(async (resolve, reject, onCancel) => {
       onCancel(() => {
         abortController.abort();
       });
+      try {
+        let token = await grant.ademand(grant.endpoint);
 
-      fetch(`${grant.endpoint.base_url}claim/`, {
-        method: "POST",
-        body: JSON.stringify({
-          headers: {
-            "Content-Type": "application/json",
-          },
-          client_secret: grant.clientSecret,
-          client_id: grant.clientId,
-          scopes: ["read", "write"],
-        }),
-        signal: abortController.signal,
-      })
-        .then((response) => {
-          if (response.ok) {
-            response.json().then((json) => {
-              setFakts(json.config);
-              resolve(json.config);
-            });
-          } else {
-            reject(response);
+        let response = await fetch(`${grant.endpoint.base_url}claim/`, {
+          method: "POST",
+          body: JSON.stringify({
+            headers: {
+              "Content-Type": "application/json",
+            },
+            token: token,
+          }),
+          signal: abortController.signal,
+        });
+
+        if (response.ok) {
+          let json = await response.json();
+          if (json.config) {
+            setFakts(json.config);
+            resolve(json.config);
           }
-        })
-        .catch(reject);
+        } else {
+          reject(response);
+        }
+      } catch (e) {
+        reject(e);
+      }
     });
 
     return result;

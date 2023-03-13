@@ -6,7 +6,7 @@ import React from "react";
 describe("Provider test", () => {
   test("Should be initialized", () => {
     render(
-      <FaktsProvider clientId="fff" clientSecret="soinsoin">
+      <FaktsProvider>
         <h4>Content</h4>
       </FaktsProvider>
     );

@@ -5,11 +5,15 @@ import dts from "vite-plugin-dts";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), dts()],
+  server: {
+    port: 5634,
+  },
   build: {
     lib: {
       entry: "src/fakts/index.tsx",
-      name: "Fakts",
+      name: "fakts",
     },
+
     rollupOptions: {
       external: ["react", "react-dom", "cancelable-promise"],
       output: {

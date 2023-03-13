@@ -1,14 +1,49 @@
 import { useState } from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "./App.css";
-import { FaktsGuard } from "./fakts";
+import { FaktsGuard, useFakts } from "./fakts";
+import { buildFaktsRetrieveGrant } from "./fakts/FaktsContext";
 import { FaktsProvider } from "./fakts/FaktsProvider";
+
+export const Test = () => {
+  const { fakts, load } = useFakts();
+
+  return (
+    <>
+      {JSON.stringify(fakts)}
+      <button
+        onClick={() =>
+          load(
+            buildFaktsRetrieveGrant(
+              {
+                name: "Localhost",
+                base_url: `http://localhost:8000/f/`,
+              },
+              "dev",
+              "github.io.jhnnsrs.fddakts",
+              window.location.host + "/callback"
+            )
+          ).catch((e) => alert(e))
+        }
+      >
+        bububsusb
+      </button>
+    </>
+  );
+};
 
 function App() {
   const [count, setCount] = useState(0);
 
   return (
     <div className="App">
-      <FaktsProvider></FaktsProvider>
+      <FaktsProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Test />} />
+          </Routes>
+        </Router>
+      </FaktsProvider>
     </div>
   );
 }
