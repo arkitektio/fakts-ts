@@ -10,25 +10,26 @@ export type Beacon = {
   url: string;
 };
 
+export type Manifest = {
+  version: string;
+  identifier: string;
+  logo?: string;
+};
+
 export type Token = string;
 
 export type FaktsRemoteGrant = {
   endpoint: FaktsEndpoint;
-  version: string;
-  identifier: string;
   ademand: (endpoint: FaktsEndpoint) => Promise<Token>;
 };
 
 export const buildFaktsRetrieveGrant = (
   endpoint: FaktsEndpoint,
-  version: string,
-  identifier: string,
-  redirect_uri: string
+  manifest: Manifest
 ) => {
   return {
     endpoint: endpoint,
-    version: version,
-    identifier: identifier,
+    manifest: manifest,
     ademand: async (endpoint: FaktsEndpoint) => {
       let response = await fetch(`${endpoint.base_url}retrieve/`, {
         method: "POST",
@@ -36,9 +37,7 @@ export const buildFaktsRetrieveGrant = (
           headers: {
             "Content-Type": "application/json",
           },
-          version: version,
-          identifier: identifier,
-          redirect_uri: redirect_uri,
+          manifest: manifest,
         }),
       });
       if (response.ok) {

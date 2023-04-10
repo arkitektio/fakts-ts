@@ -17,9 +17,6 @@ export const FaktsProvider: React.FC<FaktsProps> = ({
   store = "fakts-config",
 }) => {
   const [faktsState, setConfigState] = useState<any | null>(null);
-  const [activeGrant, setActiveGrant] = useState<
-    FaktsRemoteGrant | undefined
-  >();
 
   const setFakts = (configState?: Fakts | undefined) => {
     setConfigState(configState);

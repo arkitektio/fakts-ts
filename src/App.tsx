@@ -19,9 +19,7 @@ export const Test = () => {
                 name: "Localhost",
                 base_url: `http://localhost:8000/f/`,
               },
-              "dev",
-              "github.io.jhnnsrs.fddakts",
-              window.location.host + "/callback"
+              { version: "dev", identifier: "github.io.jhnnsrs.fakts" }
             )
           ).catch((e) => alert(e))
         }
