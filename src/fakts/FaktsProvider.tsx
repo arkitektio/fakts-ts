@@ -10,17 +10,36 @@ import {
 export type FaktsProps = {
   children?: any;
   store?: string;
+  storageProvider?: StorageProvider;
+};
+
+export type StorageProvider = {
+  set(key: string, value: string): Promise<void>;
+  get(key: string): Promise<string | null>;
+};
+
+export const localStorageProvider = {
+  set: async (key: string, value: any) => {
+    localStorage.setItem(key, value);
+  },
+  get: async (key: string) => {
+    return localStorage.getItem(key);
+  },
 };
 
 export const FaktsProvider: React.FC<FaktsProps> = ({
   children,
   store = "fakts-config",
+  storageProvider = localStorageProvider,
 }) => {
   const [faktsState, setConfigState] = useState<any | null>(null);
 
   const setFakts = (configState?: Fakts | undefined) => {
-    setConfigState(configState);
-    localStorage.setItem(store, configState ? JSON.stringify(configState) : "");
+    storageProvider
+      .set(store, configState ? JSON.stringify(configState) : "")
+      .then(() => {
+        setConfigState(configState);
+      });
   };
 
   const load = (grant: FaktsRemoteGrant) => {
@@ -51,9 +70,11 @@ export const FaktsProvider: React.FC<FaktsProps> = ({
           if (json.config) {
             setFakts(json.config);
             resolve(json.config);
+          } else {
+            reject(new Error(`Malformed response: ${JSON.stringify(json)}`));
           }
         } else {
-          reject(response);
+          reject(new Error(`Non 202 Statuscode : ${response.statusText}`));
         }
       } catch (e) {
         reject(e);
@@ -64,11 +85,11 @@ export const FaktsProvider: React.FC<FaktsProps> = ({
   };
 
   useEffect(() => {
-    const value = localStorage.getItem(store);
-
-    if (value) {
-      setConfigState(JSON.parse(value));
-    }
+    storageProvider.get(store).then((value) => {
+      if (value) {
+        setConfigState(JSON.parse(value));
+      }
+    });
   }, [store]);
 
   return (
