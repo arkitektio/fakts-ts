@@ -18,40 +18,9 @@ export type Manifest = {
 
 export type Token = string;
 
-export type FaktsRemoteGrant = {
-  endpoint: FaktsEndpoint;
-  ademand: (endpoint: FaktsEndpoint) => Promise<Token>;
-};
-
-export const buildFaktsRetrieveGrant = (
-  endpoint: FaktsEndpoint,
-  manifest: Manifest
-) => {
-  return {
-    endpoint: endpoint,
-    manifest: manifest,
-    ademand: async (endpoint: FaktsEndpoint) => {
-      let response = await fetch(`${endpoint.base_url}retrieve/`, {
-        method: "POST",
-        body: JSON.stringify({
-          headers: {
-            "Content-Type": "application/json",
-          },
-          manifest: manifest,
-        }),
-      });
-      if (response.ok) {
-        let json = await response.json();
-        if (json.status == "error") {
-          throw new Error(json.message);
-        }
-        if (json.token) {
-          return json.token;
-        }
-        throw new Error("Malformed response");
-      }
-    },
-  };
+export type FaktsRequest = {
+  endpoint: FaktsEndpoint | string;
+  manifest: Manifest;
 };
 
 export type FaktsInstance = {};
@@ -61,7 +30,7 @@ export type Fakts = any;
 export type FaktsContext = {
   fakts?: Fakts;
   setFakts: (fakts: Fakts | null) => void;
-  load: (grant: FaktsRemoteGrant) => CancelablePromise<Fakts>;
+  load: (request: FaktsRequest) => CancelablePromise<Fakts>;
 };
 
 export const FaktsContext = React.createContext<FaktsContext>({

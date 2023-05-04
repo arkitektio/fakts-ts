@@ -2,7 +2,6 @@ import { useState } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { FaktsGuard, useFakts } from "./fakts";
-import { buildFaktsRetrieveGrant } from "./fakts/FaktsContext";
 import { FaktsProvider } from "./fakts/FaktsProvider";
 
 export const Test = () => {
@@ -13,15 +12,10 @@ export const Test = () => {
       {JSON.stringify(fakts)}
       <button
         onClick={() =>
-          load(
-            buildFaktsRetrieveGrant(
-              {
-                name: "Localhost",
-                base_url: `http://localhost:8000/f/`,
-              },
-              { version: "dev", identifier: "github.io.jhnnsrs.fakts" }
-            )
-          ).catch((e) => alert(e))
+          load({
+            endpoint: `http://localhost:8000`,
+            manifest: { version: "dev", identifier: "github.io.jhnnsrs.fakts" },
+          }).catch((e) => alert(e))
         }
       >
         bububsusb

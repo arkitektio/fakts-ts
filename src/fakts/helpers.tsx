@@ -1,9 +1,6 @@
 import { Beacon, FaktsEndpoint } from "./FaktsContext";
 
-export const introspectBeacon = async (
-  beacon: Beacon
-): Promise<FaktsEndpoint> => {
-  let url = beacon.url;
+export const introspectUrl = async (url: string): Promise<FaktsEndpoint> => {
   if (!url.endsWith("/")) {
     url = url + "/";
   }
