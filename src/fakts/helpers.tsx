@@ -1,5 +1,3 @@
-import { Beacon, FaktsEndpoint } from "./FaktsContext";
-
 function mstimeout(ms: number) {
   return new Promise((resolve, reject) =>
     setTimeout(() => reject(Error(`Timeout after ${ms}`)), ms)
