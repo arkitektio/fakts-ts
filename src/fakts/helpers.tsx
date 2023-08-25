@@ -1,34 +1,39 @@
 import { Beacon, FaktsEndpoint } from "./FaktsContext";
 
-export const introspectUrl = async (url: string): Promise<FaktsEndpoint> => {
-  if (!url.endsWith("/")) {
-    url = url + "/";
-  }
-  let try_urls = [];
-
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    try_urls.push("https://" + url);
-    try_urls.push("http://" + url);
-  } else {
-    try_urls.push(url);
-  }
-
-  let endpoints = Promise.all(
-    try_urls.map(async (url) => {
-      try {
-        let res = await fetch(url + ".well-known/fakts");
-        if (res.ok) {
-          return await res.json();
-        }
-      } catch (e) {
-        console.log("Failed to fetch", url, e);
-      }
-    })
+function mstimeout(ms: number) {
+  return new Promise((resolve, reject) =>
+    setTimeout(() => reject(Error(`Timeout after ${ms}`)), ms)
   );
+}
 
-  let endpoint = (await endpoints).find((e) => e !== undefined);
-  if (endpoint) {
-    return endpoint;
+export async function awaitWithTimeout<T>(
+  promise: Promise<T>,
+  ms: number
+): Promise<T> {
+  return (await Promise.race([promise, mstimeout(ms)])) as T;
+}
+
+type ExpandedRequestInit = RequestInit & { timeout?: number };
+
+export async function fetchWithTimeout(
+  resource: RequestInfo,
+  options?: ExpandedRequestInit
+) {
+  let id: NodeJS.Timeout | undefined = undefined;
+  if (options?.timeout) {
+    const controller = new AbortController();
+    id = setTimeout(() => controller.abort(), options.timeout);
+
+    options.signal = controller.signal;
+    delete options.timeout;
   }
-  throw new Error(`No endpoint found on beacon ${url}`);
-};
+
+  const response = await fetch(resource, {
+    ...options,
+  });
+  if (id) {
+    clearTimeout(id);
+  }
+
+  return response;
+}

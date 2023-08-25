@@ -13,8 +13,9 @@ export const Test = () => {
       <button
         onClick={() =>
           load({
-            endpoint: `http://localhost:8000`,
+            endpoint: `localhost:8000`,
             manifest: { version: "dev", identifier: "github.io.jhnnsrs.fakts" },
+            introspectTimeout: 1,
           }).catch((e) => alert(e))
         }
       >

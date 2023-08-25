@@ -1,7 +1,19 @@
-import { Fakts, useFakts, Beacon } from "./FaktsContext";
-import { FaktsProvider, FaktsProps } from "./FaktsProvider";
+import { Fakts, useFakts, Beacon, Manifest } from "./FaktsContext";
+import {
+  FaktsProvider,
+  FaktsProps,
+  introspectUrl,
+  retrieveToken,
+} from "./FaktsProvider";
 import { FaktsGuard } from "./FaktsGuard";
-import { introspectUrl } from "./helpers";
+import { awaitWithTimeout } from "./helpers";
 
-export { FaktsProvider, FaktsGuard, useFakts, introspectUrl };
-export type { Fakts, FaktsProps, Beacon };
+export {
+  FaktsProvider,
+  FaktsGuard,
+  useFakts,
+  introspectUrl,
+  awaitWithTimeout,
+  retrieveToken,
+};
+export type { Fakts, FaktsProps, Beacon, Manifest };

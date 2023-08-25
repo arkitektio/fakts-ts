@@ -21,6 +21,8 @@ export type Token = string;
 export type FaktsRequest = {
   endpoint: FaktsEndpoint | string;
   manifest: Manifest;
+  introspectTimeout?: number;
+  retrieveTimeout?: number;
 };
 
 export type FaktsInstance = {};

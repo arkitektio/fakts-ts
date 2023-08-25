@@ -8,13 +8,18 @@ import {
   Manifest,
   Token,
 } from "./FaktsContext";
-import { introspectUrl } from "./helpers";
+import { awaitWithTimeout, fetchWithTimeout } from "./helpers";
 
 export type FaktsProps = {
   children?: any;
   store?: string;
   storageProvider?: StorageProvider;
-  retrieve?: (endpoint: FaktsEndpoint, manifest: Manifest) => Promise<Token>;
+  retrieve?: (
+    endpoint: FaktsEndpoint,
+    manifest: Manifest,
+    timeout: number
+  ) => Promise<Token>;
+  introspect?: (url: string, timeout: number) => Promise<FaktsEndpoint>;
 };
 
 export type StorageProvider = {
@@ -31,8 +36,12 @@ export const localStorageProvider = {
   },
 };
 
-const fetchRetrieve = async (endpoint: FaktsEndpoint, manifest: Manifest) => {
-  let response = await fetch(`${endpoint.base_url}retrieve/`, {
+export const retrieveToken = async (
+  endpoint: FaktsEndpoint,
+  manifest: Manifest,
+  timeout: number
+) => {
+  let response = await fetchWithTimeout(`${endpoint.base_url}retrieve/`, {
     method: "POST",
     body: JSON.stringify({
       headers: {
@@ -40,6 +49,7 @@ const fetchRetrieve = async (endpoint: FaktsEndpoint, manifest: Manifest) => {
       },
       manifest: manifest,
     }),
+    timeout: timeout,
   });
   if (response.ok) {
     let json = await response.json();
@@ -53,11 +63,52 @@ const fetchRetrieve = async (endpoint: FaktsEndpoint, manifest: Manifest) => {
   }
 };
 
+export const introspectUrl = async (
+  url: string,
+  timeout: number
+): Promise<FaktsEndpoint> => {
+  url = url.trim();
+
+  if (!url.endsWith("/")) {
+    url = url + "/";
+  }
+  let try_urls = [];
+
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    try_urls.push("https://" + url);
+    try_urls.push("http://" + url);
+  } else {
+    try_urls.push(url);
+  }
+
+  let endpoints = Promise.all(
+    try_urls.map(async (url) => {
+      try {
+        let res = await fetchWithTimeout(url + ".well-known/fakts", {
+          timeout: timeout,
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (e) {
+        return undefined;
+      }
+    })
+  );
+
+  let endpoint = (await endpoints).find((e) => e !== undefined);
+  if (endpoint) {
+    return endpoint;
+  }
+  throw new Error(`No endpoint found on beacon ${url}`);
+};
+
 export const FaktsProvider = ({
   children,
   store = "fakts-config",
   storageProvider = localStorageProvider,
-  retrieve = fetchRetrieve,
+  retrieve = retrieveToken,
+  introspect = introspectUrl,
 }: FaktsProps) => {
   const [faktsState, setConfigState] = useState<any | null>(null);
 
@@ -80,10 +131,17 @@ export const FaktsProvider = ({
       });
       try {
         if (typeof request.endpoint === "string") {
-          request.endpoint = await introspectUrl(request.endpoint);
+          request.endpoint = await introspectUrl(
+            request.endpoint,
+            request.introspectTimeout || 5000
+          );
         }
 
-        let token = await retrieve(request.endpoint, request.manifest);
+        let token = await retrieve(
+          request.endpoint,
+          request.manifest,
+          request.retrieveTimeout || 5000
+        );
 
         let response = await fetch(`${request.endpoint.base_url}claim/`, {
           method: "POST",
