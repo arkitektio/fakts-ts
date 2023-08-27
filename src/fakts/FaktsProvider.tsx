@@ -14,6 +14,7 @@ export type FaktsProps = {
   children?: any;
   store?: string;
   storageProvider?: StorageProvider;
+  staticEndpoints?: FaktsEndpoint[];
   retrieve?: (
     endpoint: FaktsEndpoint,
     manifest: Manifest,
@@ -91,6 +92,7 @@ export const introspectUrl = async (
           return await res.json();
         }
       } catch (e) {
+        console.log(e);
         return undefined;
       }
     })
@@ -107,10 +109,14 @@ export const FaktsProvider = ({
   children,
   store = "fakts-config",
   storageProvider = localStorageProvider,
+  staticEndpoints = [],
   retrieve = retrieveToken,
   introspect = introspectUrl,
 }: FaktsProps) => {
   const [faktsState, setConfigState] = useState<any | null>(null);
+
+  const [registeredEndpoints, setRegisteredEndpoints] =
+    useState<FaktsEndpoint[]>(staticEndpoints);
 
   const setFakts = (configState?: Fakts | undefined) => {
     storageProvider
@@ -187,6 +193,8 @@ export const FaktsProvider = ({
         fakts: faktsState,
         setFakts: setFakts,
         load: load,
+        registeredEndpoints,
+        setRegisteredEndpoints,
       }}
     >
       {children}

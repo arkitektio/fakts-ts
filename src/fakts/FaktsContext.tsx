@@ -33,11 +33,14 @@ export type FaktsContext = {
   fakts?: Fakts;
   setFakts: (fakts: Fakts | null) => void;
   load: (request: FaktsRequest) => CancelablePromise<Fakts>;
+  registeredEndpoints?: FaktsEndpoint[];
+  setRegisteredEndpoints: React.Dispatch<React.SetStateAction<FaktsEndpoint[]>>;
 };
 
 export const FaktsContext = React.createContext<FaktsContext>({
-  load: () => null as unknown as CancelablePromise<Fakts>,
-  setFakts: () => {},
+  load:  () => { return CancelablePromise.reject(new Error("No FaktsProvider found"))},
+  setFakts: () => { throw new Error("No FaktsProvider found")},
+  setRegisteredEndpoints: () => { throw new Error("No FaktsProvider found") },
 });
 
 export const useFakts = () => useContext(FaktsContext);
