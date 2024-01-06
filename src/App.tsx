@@ -1,29 +1,45 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "./App.css";
-import { FaktsGuard, useFakts } from "./fakts";
+import { Fakts, FaktsEndpoint, Manifest, useFakts } from "./fakts";
 import { FaktsProvider } from "./fakts/FaktsProvider";
+import { useLoadFakts } from "./fakts/hooks/useLoadFakts";
+
+
+
+
+
 
 export const Test = () => {
-  const { fakts, load } = useFakts();
+  const { fakts, load, setFakts } = useFakts();
+  const { progress, ongoing, causeLoad, error } = useLoadFakts({
+    url: `localhost:8010`,
+    manifest: { version: "dev", identifier: "github.io.jhnnsrs.jj" },
+    requestPublic: true,
+    requestedClientType: "website"
+
+  });
 
   return (
     <>
       {JSON.stringify(fakts)}
       <button
-        onClick={() =>
-          load({
-            endpoint: `localhost:8000`,
-            manifest: { version: "dev", identifier: "github.io.jhnnsrs.fakts" },
-            introspectTimeout: 1,
-          }).catch((e) => alert(e))
-        }
+        onClick={() => causeLoad()}
       >
-        bububsusb
+        {ongoing ? "Cancel" : "Load"} {progress}
       </button>
+      {progress} {error}
+      <button 
+        onClick={() => setFakts(null)}
+      >
+        Reset
+      </button>
+       
     </>
   );
 };
+
+
 
 function App() {
   const [count, setCount] = useState(0);

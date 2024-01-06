@@ -1,31 +1,27 @@
-import { CancelablePromise } from "cancelable-promise";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  Discovery,
   Fakts,
   FaktsContext,
   FaktsEndpoint,
   FaktsRequest,
-  Manifest,
-  Token,
+  Grant,
+  StorageProvider,
+  Validator
 } from "./FaktsContext";
-import { awaitWithTimeout, fetchWithTimeout } from "./helpers";
+import { buildRemoteGrant } from "./grants/meta";
+import { buildFailsafeDemander, demandDeviceToken, demandRetrieve } from "./grants/remote/demanders";
+
+
 
 export type FaktsProps = {
   children?: any;
   store?: string;
+  defaultRequestParams?: Partial<FaktsRequest>;
   storageProvider?: StorageProvider;
   staticEndpoints?: FaktsEndpoint[];
-  retrieve?: (
-    endpoint: FaktsEndpoint,
-    manifest: Manifest,
-    timeout: number
-  ) => Promise<Token>;
-  introspect?: (url: string, timeout: number) => Promise<FaktsEndpoint>;
-};
-
-export type StorageProvider = {
-  set(key: string, value: string): Promise<void>;
-  get(key: string): Promise<string | null>;
+  grant?: Grant,
+  validate?: Validator,
 };
 
 export const localStorageProvider = {
@@ -37,154 +33,123 @@ export const localStorageProvider = {
   },
 };
 
-export const retrieveToken = async (
-  endpoint: FaktsEndpoint,
-  manifest: Manifest,
-  timeout: number
-) => {
-  let response = await fetchWithTimeout(`${endpoint.base_url}retrieve/`, {
-    method: "POST",
-    body: JSON.stringify({
-      headers: {
-        "Content-Type": "application/json",
-      },
-      manifest: manifest,
-    }),
-    timeout: timeout,
-  });
-  if (response.ok) {
-    let json = await response.json();
-    if (json.status == "error") {
-      throw new Error(json.message);
+
+
+export const validateDictionary = async (obj: any): Promise<Fakts> => {
+    // Check if it's an object
+    if (typeof obj !== 'object' || obj === null) {
+      throw new Error('The value provided is not an object');
     }
-    if (json.token) {
-      return json.token;
-    }
-    throw new Error("Malformed response");
-  }
-};
 
-export const introspectUrl = async (
-  url: string,
-  timeout: number
-): Promise<FaktsEndpoint> => {
-  url = url.trim();
-
-  if (!url.endsWith("/")) {
-    url = url + "/";
-  }
-  let try_urls = [];
-
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    try_urls.push("https://" + url);
-    try_urls.push("http://" + url);
-  } else {
-    try_urls.push(url);
-  }
-
-  let endpoints = Promise.all(
-    try_urls.map(async (url) => {
-      try {
-        let res = await fetchWithTimeout(url + ".well-known/fakts", {
-          timeout: timeout,
-        });
-        if (res.ok) {
-          return await res.json();
-        }
-      } catch (e) {
-        console.log(e);
-        return undefined;
+    // Check if all keys are strings
+    for (const key in obj) {
+      if (!obj.hasOwnProperty(key) || typeof key !== 'string') {
+        throw new Error('The object provided contains non-string keys');
       }
-    })
-  );
+    }
 
-  let endpoint = (await endpoints).find((e) => e !== undefined);
-  if (endpoint) {
-    return endpoint;
+    // If all checks pass, return true
+    return obj;
   }
-  throw new Error(`No endpoint found on beacon ${url}`);
-};
+  
+
+
+
+export const defaultRemoteGrant = buildRemoteGrant({demand: buildFailsafeDemander(demandRetrieve, demandDeviceToken)})
+
+
 
 export const FaktsProvider = ({
   children,
   store = "fakts-config",
   storageProvider = localStorageProvider,
   staticEndpoints = [],
-  retrieve = retrieveToken,
-  introspect = introspectUrl,
+  defaultRequestParams = {},
+  grant = defaultRemoteGrant, 
+  validate = validateDictionary,
 }: FaktsProps) => {
-  const [faktsState, setConfigState] = useState<any | null>(null);
+  const [faktsState, setConfigState] = useState<Fakts | null | undefined>(null);
 
   const [registeredEndpoints, setRegisteredEndpoints] =
     useState<FaktsEndpoint[]>(staticEndpoints);
 
-  const setFakts = (configState?: Fakts | undefined) => {
-    storageProvider
-      .set(store, configState ? JSON.stringify(configState) : "")
-      .then(() => {
-        setConfigState(configState);
-      });
+  const setFaktsAsync = async (newFakts?: Fakts  | null | undefined) => {
+    const validatedFakts = newFakts ? await validate(newFakts) : null
+    const validatedFaktsString = validatedFakts ? JSON.stringify(validatedFakts) : ""
+
+    await storageProvider.set(store, validatedFaktsString)
+    setConfigState(x => newFakts)
   };
+
+  const setFakts = (newFakts?: Fakts  | null | undefined) => {
+    setFaktsAsync(newFakts)
+  };
+
+  const reset = async () => {
+    await setFaktsAsync()
+  }
+
+  const registerEndpoints = (endpoints: FaktsEndpoint[]) => {
+    setRegisteredEndpoints((oldEndpoints) => {
+      let newEndpoints = [...oldEndpoints];
+      endpoints.forEach((endpoint) => {
+        if (!oldEndpoints.find((e) => e.base_url === endpoint.base_url)) {
+          newEndpoints.push(endpoint);
+        }
+      });
+      return newEndpoints;
+    });
+
+    return () => {
+      setRegisteredEndpoints((oldEndpoints) => {
+        let newEndpoints = [...oldEndpoints];
+        endpoints.forEach((endpoint) => {
+          let index = newEndpoints.findIndex(
+            (e) => e.base_url === endpoint.base_url
+          );
+          if (index >= 0) {
+            newEndpoints.splice(index, 1);
+          }
+        });
+        return newEndpoints;
+      });
+    };
+  };
+
+  
+
 
   const load = (request: FaktsRequest) => {
     console.log("Loading");
 
     let abortController = new AbortController();
 
-    let result = new CancelablePromise(async (resolve, reject, onCancel) => {
-      onCancel(() => {
-        abortController.abort();
-      });
+    let result = new Promise<Fakts>(async (resolve, reject) => {
       try {
-        if (typeof request.endpoint === "string") {
-          request.endpoint = await introspectUrl(
-            request.endpoint,
-            request.introspectTimeout || 5000
-          );
-        }
 
-        let token = await retrieve(
-          request.endpoint,
-          request.manifest,
-          request.retrieveTimeout || 5000
-        );
+        request = {...defaultRequestParams, ...request}
 
-        let response = await fetch(`${request.endpoint.base_url}claim/`, {
-          method: "POST",
-          body: JSON.stringify({
-            headers: {
-              "Content-Type": "application/json",
-            },
-            token: token,
-          }),
-          signal: abortController.signal,
-        });
-
-        if (response.ok) {
-          let json = await response.json();
-          if (json.config) {
-            setFakts(json.config);
-            resolve(json.config);
-          } else {
-            reject(new Error(`Malformed response: ${JSON.stringify(json)}`));
-          }
-        } else {
-          reject(new Error(`Non 202 Statuscode : ${response.statusText}`));
-        }
+        let fakts = await grant(request, abortController)
+        console.log("Fakts loaded", fakts)
+        await setFaktsAsync(fakts)
+        console.log("Fakts loaded")
+        resolve(fakts);
       } catch (e) {
+        console.error("Could not load Fakts", e)
         reject(e);
       }
     });
 
-    return result;
+    return {
+      cancel: () => {
+        abortController.abort();
+      },
+      promise: result,
+    };
   };
 
   useEffect(() => {
-    storageProvider.get(store).then((value) => {
-      if (value) {
-        setConfigState(JSON.parse(value));
-      }
-    });
+    storageProvider.get(store).then(async (x) => JSON.parse(x as string)).then(validate).then(setFaktsAsync).catch((e) => console.error("Could not load Fakts", e));
   }, [store]);
 
   return (
@@ -193,8 +158,9 @@ export const FaktsProvider = ({
         fakts: faktsState,
         setFakts: setFakts,
         load: load,
+        reset,
         registeredEndpoints,
-        setRegisteredEndpoints,
+        registerEndpoints,
       }}
     >
       {children}
