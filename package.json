@@ -1,6 +1,6 @@
 {
   "name": "@jhnnsrs/fakts",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
@@ -12,11 +12,13 @@
   "files": [
     "dist"
   ],
-  "module": "./dist/fakts.mjs",
+  "type": "module",
+  "main": "./dist/fakts.umd.cjs",
+  "module": "./dist/fakts.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/fakts.mjs",
+      "import": "./dist/fakts.js",
       "require": "./dist/fakts.umd.js"
     }
   },
@@ -26,12 +28,13 @@
     "@types/react-dom": "^18.0.6",
     "@vitejs/plugin-react": "^2.1.0",
     "happy-dom": "^6.0.4",
+    "prettier": "^3.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router": "^6.4.3",
     "react-router-dom": "^6.4.3",
     "typescript": "^4.6.4",
-    "vite": "^3.1.0",
+    "vite": "^5.0.11",
     "vite-plugin-dts": "^1.6.3",
     "vitest": "^0.23.4"
   },
@@ -42,6 +45,6 @@
     "react-router-dom": "^6.4.3"
   },
   "dependencies": {
-    "cancelable-promise": "^4.3.0"
+    "any-signal": "^4.1.1"
   }
 }
