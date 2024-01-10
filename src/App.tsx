@@ -11,8 +11,7 @@ import { useLoadFakts } from "./fakts/hooks/useLoadFakts";
 
 
 export const Test = () => {
-  const { fakts, load, setFakts } = useFakts();
-  const { progress, ongoing, causeLoad, error } = useLoadFakts({
+  const { progress, loading, load, error, remove, fakts} = useLoadFakts({
     url: `localhost:8010`,
     manifest: { version: "dev", identifier: "github.io.jhnnsrs.jj" },
     requestPublic: true,
@@ -23,17 +22,13 @@ export const Test = () => {
   return (
     <>
       {JSON.stringify(fakts)}
+      <button onClick={() => remove()}>Remove</button>
       <button
-        onClick={() => causeLoad()}
+        onClick={() => load()}
       >
-        {ongoing ? "Cancel" : "Load"} {progress}
+        {loading ? "Cancel" : "Load"} {progress}
       </button>
       {progress} {error}
-      <button 
-        onClick={() => setFakts(null)}
-      >
-        Reset
-      </button>
        
     </>
   );

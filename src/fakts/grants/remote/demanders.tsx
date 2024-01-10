@@ -200,7 +200,7 @@ export const buildFailsafeDemander = (...args: Demander[]): Demander => {
       throw new Error("No grant worked" + errors.map(e => (e as Error).message).join(", "))
     }
     else {
-      throw new Error("No grant worked" + (errors.at(0) as Error).message)
+      throw new Error("No grant worked" + (errors.at(-1) as Error).message)
     }
 
   }

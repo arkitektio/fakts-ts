@@ -3,12 +3,13 @@ import { CancelableRequest, Fakts, FaktsRequest, useFakts } from "../FaktsContex
 
 
 export const useLoadFakts = (request: FaktsRequest) => {
-    const {load } = useFakts()
+    const {load: faktsLoad, setFakts, fakts, registeredEndpoints, registerEndpoints } = useFakts()
     const [progress, setProgress] = useState<string | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
     const [promise, setPromise] = useState<CancelableRequest<Fakts> | null>(null);
+   
 
-    const causeLoad = useCallback((other: Partial<FaktsRequest> = {}) => {
+    const load = useCallback((other: Partial<FaktsRequest> = {}) => {
         if (promise) {
             promise.cancel();
         }
@@ -16,8 +17,21 @@ export const useLoadFakts = (request: FaktsRequest) => {
 
             let causedRequest = {...request, ...other}
 
+            let manifest = causedRequest.manifest;
+
+
+            if (causedRequest.requestedClientType == "website" && !causedRequest.requestedRedirectURIs) {
+                throw new Error("No redirect URI specified, but requested website, please set requestedRedirectURIs")
+            }
+
+            if (!manifest) {
+                throw new Error("No manifest")
+            }
+
             setError(undefined)
-            const newPromise = load({...causedRequest, 
+            const newPromise = faktsLoad({
+                ...causedRequest, 
+                manifest,
                 onProgress: (progress) => {
                     causedRequest.onProgress && causedRequest.onProgress(progress)
                     setProgress(progress);
@@ -32,7 +46,7 @@ export const useLoadFakts = (request: FaktsRequest) => {
             }).catch((e) => {
                 console.log("Error", e);
                 
-                setPromise(p => null)
+                setPromise(null)
                 setError(e.message)
             })
 
@@ -42,14 +56,28 @@ export const useLoadFakts = (request: FaktsRequest) => {
         }
     }
     , [promise]);
+
+
+    const remove = useCallback(() => {
+        if (promise) {
+            promise.cancel();
+        }
+        else {
+            setFakts(null)
+        }
+    }, [promise])
     
     console.log("rerender")
 
     return {
         progress,
-        ongoing : promise != null,
-        causeLoad,
-        error
+        loading : promise != null,
+        load,
+        remove,
+        error,
+        fakts,
+        registerEndpoints,
+        registeredEndpoints,
     }
 
 } 
