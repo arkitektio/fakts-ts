@@ -2,25 +2,22 @@ import { useCallback, useState } from "react";
 import { CancelableRequest, Fakts, FaktsRequest, useFakts } from "../FaktsContext";
 
 
-export const useLoadFakts = (request: FaktsRequest) => {
+export const useLoadFakts = () => {
     const {load: faktsLoad, setFakts, fakts, registeredEndpoints, registerEndpoints } = useFakts()
     const [progress, setProgress] = useState<string | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
     const [promise, setPromise] = useState<CancelableRequest<Fakts> | null>(null);
    
 
-    const load = useCallback((other: Partial<FaktsRequest> = {}) => {
+    const load = useCallback((request: FaktsRequest) => {
         if (promise) {
             promise.cancel();
         }
         else {
-
-            let causedRequest = {...request, ...other}
-
-            let manifest = causedRequest.manifest;
+            let manifest = request.manifest;
 
 
-            if (causedRequest.requestedClientType == "website" && !causedRequest.requestedRedirectURIs) {
+            if (request.requestedClientType == "website" && !request.requestedRedirectURIs) {
                 throw new Error("No redirect URI specified, but requested website, please set requestedRedirectURIs")
             }
 
@@ -30,10 +27,10 @@ export const useLoadFakts = (request: FaktsRequest) => {
 
             setError(undefined)
             const newPromise = faktsLoad({
-                ...causedRequest, 
+                ...request, 
                 manifest,
                 onProgress: (progress) => {
-                    causedRequest.onProgress && causedRequest.onProgress(progress)
+                    request.onProgress && request.onProgress(progress)
                     setProgress(progress);
                 }
             });

@@ -11,20 +11,21 @@ import { useLoadFakts } from "./fakts/hooks/useLoadFakts";
 
 
 export const Test = () => {
-  const { progress, loading, load, error, remove, fakts} = useLoadFakts({
-    url: `localhost:8010`,
-    manifest: { version: "dev", identifier: "github.io.jhnnsrs.jj" },
-    requestPublic: true,
-    requestedClientType: "website"
-
-  });
+  const { progress, loading, load, error, remove, fakts} = useLoadFakts();
 
   return (
     <>
       {JSON.stringify(fakts)}
       <button onClick={() => remove()}>Remove</button>
       <button
-        onClick={() => load()}
+        onClick={() => load({
+          url: `localhost:8010`,
+          manifest: { version: "dev", identifier: "github.io.jhnnsrs.jj", scopes: ["*"]},
+          requestPublic: true,
+          requestedClientType: "website",
+          requestedRedirectURIs: ["http://localhost:3000"],
+      
+        })}
       >
         {loading ? "Cancel" : "Load"} {progress}
       </button>

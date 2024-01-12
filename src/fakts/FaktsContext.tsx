@@ -12,6 +12,7 @@ export type Beacon = {
 export type Manifest = {
   version: string;
   identifier: string;
+  scopes: string[];
   logo?: string;
 };
 
@@ -24,7 +25,7 @@ export type Closable = {
 export type ClientTypes = "website" | "desktop" | "development";
 
 
-export type FaktsRequest = {
+export type BaseFaktsRequest = {
   url?: string;
   endpoint?: FaktsEndpoint;
   manifest: Manifest;
@@ -41,6 +42,30 @@ export type FaktsRequest = {
   onOpenWindow?: (request: FaktsRequest, code: string) => Closable;
   showAllErrors?: boolean;
 };
+
+export type WebsiteFaktsRequest = {
+  requestedRedirectURIs: string[];
+  requestedClientType: "website";
+  requestPublic: boolean;
+} & BaseFaktsRequest;
+
+export type DesktopFaktsRequest = {
+  requestedClientType: "desktop";
+  requestPublic: boolean;
+} & BaseFaktsRequest;
+
+export type DevelopmentFaktsRequest = {
+  requestedClientType: "development";
+} & BaseFaktsRequest;
+
+export type FaktsRequest =
+  | WebsiteFaktsRequest
+  | DesktopFaktsRequest
+  | DevelopmentFaktsRequest;
+
+
+
+
 
 
 export type FaktsInstance = {};
