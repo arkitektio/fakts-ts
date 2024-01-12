@@ -1,0 +1,15 @@
+name: workflow-name
+on: [push]
+
+jobs:
+  job-name:
+    runs-on: ubuntu-latest
+    services:
+      lok:
+        image: nginxdemos/hello
+        options: --rm -d -p 80:80
+    steps:
+      - name: Check online status of the service
+        run: |
+          sleep 10
+          curl http://localhost
