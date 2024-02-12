@@ -91,25 +91,31 @@ export const FaktsProvider = ({
 
   const registerEndpoints = (endpoints: FaktsEndpoint[]) => {
     setRegisteredEndpoints((oldEndpoints) => {
-      let newEndpoints = [...oldEndpoints];
-      endpoints.forEach((endpoint) => {
-        if (!oldEndpoints.find((e) => e.base_url === endpoint.base_url)) {
-          newEndpoints.push(endpoint);
+      let newEndpoints = [...oldEndpoints, ...endpoints];
+
+      const seenUrls = new Set();
+      const uniqueEndpoints = newEndpoints.filter(item => {
+        if (seenUrls.has(item.base_url)) {
+          return false;
+        } else {
+          seenUrls.add(item.base_url);
+          return true;
         }
       });
-      return newEndpoints;
+
+      return uniqueEndpoints;
     });
 
     return () => {
       setRegisteredEndpoints((oldEndpoints) => {
-        let newEndpoints = [...oldEndpoints];
-        endpoints.forEach((endpoint) => {
-          let index = newEndpoints.findIndex(
+        let newEndpoints = oldEndpoints.filter((endpoint) => {
+          let index = endpoints.findIndex(
             (e) => e.base_url === endpoint.base_url
           );
           if (index >= 0) {
-            newEndpoints.splice(index, 1);
+            return false;
           }
+          return true;
         });
         return newEndpoints;
       });
